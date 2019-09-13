@@ -165,7 +165,7 @@ func (c *kregistry) Register(s *registry.Service, opts ...registry.RegisterOptio
 	// Marshal micro service
 	svcJson, _ := json.Marshal(s)
 	return c.patchService(k8sService.Name, &patchStatusAnnotation{
-		Op:    "replace",
+		Op:    "add",
 		Path:  "/metadata/annotations/" + strings.ReplaceAll(statusAnnotationName, "/", "~1"),
 		Value: string(svcJson),
 	})
