@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/micro/go-micro/registry"
-	"github.com/micro/go-micro/service"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -110,7 +109,7 @@ func (c *kregistry) patchService(name string, patch *patchStatusAnnotation) erro
 	_, err := c.client.Services("").Patch(name, types.JSONPatchType, patchJson)
 
 	if err != nil {
-		return fmt.Errorf("error updating service %s list: %v", service.Name, err)
+		return fmt.Errorf("error updating service %s list: %v", name, err)
 	}
 	return nil
 }
