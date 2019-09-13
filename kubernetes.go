@@ -39,7 +39,7 @@ func configure(k *kregistry, opts ...registry.Option) error {
 	if kubeconfig := os.Getenv("KUBECONFIG"); kubeconfig != "" {
 		rules.ExplicitPath = kubeconfig
 	}
-	clientConfig := cmd.NewNonInteractiveDeferredLoadingClientConfig(rules, nil)
+	clientConfig := cmd.NewNonInteractiveDeferredLoadingClientConfig(rules, &cmd.ConfigOverrides{})
 
 	config, err := clientConfig.ClientConfig()
 	if err != nil {
