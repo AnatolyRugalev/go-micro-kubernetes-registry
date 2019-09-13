@@ -21,9 +21,10 @@ const (
 )
 
 type kregistry struct {
-	client  corev1.CoreV1Interface
-	timeout time.Duration
-	options registry.Options
+	client    corev1.CoreV1Interface
+	timeout   time.Duration
+	options   registry.Options
+	namespace string
 }
 
 func configure(k *kregistry, opts ...registry.Option) error {
@@ -54,6 +55,7 @@ func configure(k *kregistry, opts ...registry.Option) error {
 
 	k.client = c
 	k.timeout = k.options.Timeout
+	k.namespace, _, _ = clientConfig.Namespace()
 
 	return nil
 }
@@ -70,7 +72,7 @@ func (c *kregistry) Options() registry.Options {
 
 func (c *kregistry) findAllServices() ([]v1.Service, error) {
 	selector := serviceLabelName
-	svcs, err := c.client.Services("").List(metav1.ListOptions{
+	svcs, err := c.client.Services(c.namespace).List(metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
@@ -84,7 +86,7 @@ func (c *kregistry) findAllServices() ([]v1.Service, error) {
 }
 func (c *kregistry) findService(name string) (*v1.Service, error) {
 	selector := serviceLabelName + "=" + name
-	svcs, err := c.client.Services("").List(metav1.ListOptions{
+	svcs, err := c.client.Services(c.namespace).List(metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
@@ -99,7 +101,7 @@ func (c *kregistry) findService(name string) (*v1.Service, error) {
 
 func (c *kregistry) setAnnotation(svcName string, name string, value string) error {
 	patch := fmt.Sprintf(`{"metadata":{"annotations":{"%s": "%s"}}`, name, value)
-	_, err := c.client.Services("").Patch(svcName, types.StrategicMergePatchType, []byte(patch))
+	_, err := c.client.Services(c.namespace).Patch(svcName, types.StrategicMergePatchType, []byte(patch))
 
 	if err != nil {
 		return fmt.Errorf("error setting service %s annotation: %v", name, err)
@@ -116,7 +118,7 @@ func (c *kregistry) removeAnnotation(svcName string, name string) error {
 		Path: "/metadata/annotations/" + strings.ReplaceAll(name, "/", "~1"),
 	}
 	p, _ := json.Marshal(patch)
-	_, err := c.client.Services("").Patch(name, types.JSONPatchType, p)
+	_, err := c.client.Services(c.namespace).Patch(name, types.JSONPatchType, p)
 
 	if err != nil {
 		return fmt.Errorf("error updating service %s list: %v", name, err)

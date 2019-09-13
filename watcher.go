@@ -81,7 +81,7 @@ func newWatcher(kr *kregistry, opts ...registry.WatchOption) (registry.Watcher, 
 		o(&wo)
 	}
 
-	watcher, err := kr.client.Services("").Watch(metav1.ListOptions{
+	watcher, err := kr.client.Services(kr.namespace).Watch(metav1.ListOptions{
 		LabelSelector: serviceLabelName,
 	})
 
