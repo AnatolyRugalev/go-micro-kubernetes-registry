@@ -99,10 +99,10 @@ func (c *kregistry) findService(name string) (*v1.Service, error) {
 
 func (c *kregistry) setAnnotation(svcName string, name string, value string) error {
 	patch := fmt.Sprintf(`{"metadata":{"annotations":{"%s": "%s"}}`, name, value)
-	_, err := c.client.Services("").Patch(name, types.StrategicMergePatchType, []byte(patch))
+	_, err := c.client.Services("").Patch(svcName, types.StrategicMergePatchType, []byte(patch))
 
 	if err != nil {
-		return fmt.Errorf("error updating service %s list: %v", name, err)
+		return fmt.Errorf("error setting service %s annotation: %v", name, err)
 	}
 	return nil
 }
