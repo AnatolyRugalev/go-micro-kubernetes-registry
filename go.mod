@@ -9,5 +9,3 @@ require (
 	k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
 	k8s.io/utils v0.0.0-20190907131718-3d4f5b7dea0b // indirect
 )
-
-replace git.apache.org/thrift.git => github.com/apache/thrift v0.12.0
