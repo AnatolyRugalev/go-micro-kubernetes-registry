@@ -68,12 +68,6 @@ func (c *kregistry) Options() registry.Options {
 	return c.options
 }
 
-type patchStatusAnnotation struct {
-	Op    string `json:"op"`
-	Path  string `json:"path"`
-	Value string `json:"value,omitempty"`
-}
-
 func (c *kregistry) findAllServices() ([]v1.Service, error) {
 	selector := serviceLabelName
 	svcs, err := c.client.Services("").List(metav1.ListOptions{
@@ -103,11 +97,26 @@ func (c *kregistry) findService(name string) (*v1.Service, error) {
 	return &svcs.Items[0], nil
 }
 
-func (c *kregistry) patchService(name string, patch *patchStatusAnnotation) error {
-	// Marshal "patch" request for Kubernetes API
-	patchJson, _ := json.Marshal(patch)
+func (c *kregistry) setAnnotation(svcName string, name string, value string) error {
+	patch := fmt.Sprintf(`{"metadata":{"annotations":{"%s": "%s"}}`, name, value)
+	_, err := c.client.Services("").Patch(name, types.StrategicMergePatchType, []byte(patch))
 
-	_, err := c.client.Services("").Patch(name, types.JSONPatchType, patchJson)
+	if err != nil {
+		return fmt.Errorf("error updating service %s list: %v", name, err)
+	}
+	return nil
+}
+
+func (c *kregistry) removeAnnotation(svcName string, name string) error {
+	patch := struct {
+		Op   string `json:"op"`
+		Path string `json:"path"`
+	}{
+		Op:   "remove",
+		Path: "/metadata/annotations/" + strings.ReplaceAll(name, "/", "~1"),
+	}
+	p, _ := json.Marshal(patch)
+	_, err := c.client.Services("").Patch(name, types.JSONPatchType, p)
 
 	if err != nil {
 		return fmt.Errorf("error updating service %s list: %v", name, err)
@@ -164,11 +173,7 @@ func (c *kregistry) Register(s *registry.Service, opts ...registry.RegisterOptio
 
 	// Marshal micro service
 	svcJson, _ := json.Marshal(s)
-	return c.patchService(k8sService.Name, &patchStatusAnnotation{
-		Op:    "add",
-		Path:  "/metadata/annotations/" + strings.ReplaceAll(statusAnnotationName, "/", "~1"),
-		Value: string(svcJson),
-	})
+	return c.setAnnotation(k8sService.Name, statusAnnotationName, string(svcJson))
 }
 
 // Deregister nils out any things set in Register
@@ -177,11 +182,7 @@ func (c *kregistry) Deregister(s *registry.Service) error {
 	if err != nil {
 		return err
 	}
-
-	return c.patchService(k8sService.Name, &patchStatusAnnotation{
-		Op:   "delete",
-		Path: "/metadata/annotations/" + strings.ReplaceAll(statusAnnotationName, "/", "~1"),
-	})
+	return c.removeAnnotation(k8sService.Name, statusAnnotationName)
 }
 
 func (c *kregistry) GetService(name string) ([]*registry.Service, error) {
