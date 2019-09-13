@@ -10,6 +10,7 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	cmd "k8s.io/client-go/tools/clientcmd"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -165,7 +166,7 @@ func (c *kregistry) Register(s *registry.Service, opts ...registry.RegisterOptio
 	svcJson, _ := json.Marshal(s)
 	return c.patchService(k8sService.Name, &patchStatusAnnotation{
 		Op:    "replace",
-		Path:  "/metadata/annotations/" + statusAnnotationName,
+		Path:  "/metadata/annotations/" + strings.ReplaceAll(statusAnnotationName, "/", "~1"),
 		Value: string(svcJson),
 	})
 }
@@ -179,7 +180,7 @@ func (c *kregistry) Deregister(s *registry.Service) error {
 
 	return c.patchService(k8sService.Name, &patchStatusAnnotation{
 		Op:   "delete",
-		Path: "/metadata/annotations/" + statusAnnotationName,
+		Path: "/metadata/annotations/" + strings.ReplaceAll(statusAnnotationName, "/", "~1"),
 	})
 }
 
